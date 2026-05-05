@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useDraft } from '../hooks/useDraft';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { SectionHeading } from '../extensions/SectionHeading';
+import { Divider } from '../extensions/Divider';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
@@ -11,7 +12,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const [meta, setMeta] = useState<any>(null);
 
   const editor = useEditor({
-    extensions: [StarterKit, SectionHeading],
+    extensions: [StarterKit, SectionHeading, Divider],
     content: initial?.doc,
   }, [initial?.doc]);
 
