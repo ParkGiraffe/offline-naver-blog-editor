@@ -5,6 +5,7 @@ import { useDraft } from '../hooks/useDraft';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { SectionHeading } from '../extensions/SectionHeading';
 import { Divider } from '../extensions/Divider';
+import { PhotoBlock } from '../extensions/PhotoBlock';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
@@ -12,7 +13,15 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const [meta, setMeta] = useState<any>(null);
 
   const editor = useEditor({
-    extensions: [StarterKit, SectionHeading, Divider],
+    extensions: [
+      StarterKit,
+      SectionHeading,
+      Divider,
+      PhotoBlock.configure({
+        onPaste: () => window.giraffe.pasteImage(slug),
+        resolveSrc: (rel) => `corpus-image://${slug}/${encodeURI(rel)}`,
+      }),
+    ],
     content: initial?.doc,
   }, [initial?.doc]);
 

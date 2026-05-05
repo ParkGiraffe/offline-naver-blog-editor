@@ -1,10 +1,14 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net } from 'electron';
 import { join } from 'path';
 import { Channels } from './ipc';
 import { Corpus } from './corpus';
 import { DraftStore } from './draftStore';
 import { saveClipboardImage } from './clipboardImage';
 import { runMacro, cancelMacro } from './macroRunner';
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'corpus-image', privileges: { secure: true, supportFetchAPI: true, standard: true } },
+]);
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -31,6 +35,16 @@ function store(): DraftStore {
 }
 
 app.whenReady().then(() => {
+  protocol.handle('corpus-image', (req) => {
+    const url = new URL(req.url);
+    const slug = url.host;
+    const rel = decodeURIComponent(url.pathname.slice(1));
+    const root = corpus.getPath();
+    if (!root) return new Response('corpus not set', { status: 500 });
+    const filePath = join(root, 'drafts', slug, rel);
+    return net.fetch('file://' + filePath);
+  });
+
   ipcMain.handle(Channels.getCorpusPath, () => corpus.getPath());
   ipcMain.handle(Channels.setCorpusPath, (_e, p: string) => corpus.setPath(p));
   ipcMain.handle(Channels.listDrafts, () => corpus.listDrafts());
