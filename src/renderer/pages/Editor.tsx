@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useState } from 'react';
 import { useDraft } from '../hooks/useDraft';
 import { useAutoSave } from '../hooks/useAutoSave';
+import { SectionHeading } from '../extensions/SectionHeading';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
@@ -10,7 +11,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const [meta, setMeta] = useState<any>(null);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, SectionHeading],
     content: initial?.doc,
   }, [initial?.doc]);
 
