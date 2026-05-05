@@ -1,17 +1,77 @@
 --- /Users/bag-yoseb/.claude/skills/blog/scripts/paste_to_naver.py.bak	2026-05-05 23:39:19
-+++ /Users/bag-yoseb/.claude/skills/blog/scripts/paste_to_naver.py	2026-05-05 23:41:45
-@@ -259,8 +259,24 @@
-             print(f"    [ERROR] Auto-paste failed: {result.stderr.strip()}", file=sys.stderr)
-     except Exception as e:
-         print(f"    [ERROR] Paste command exception: {e}", file=sys.stderr)
-+
-+
-+# ---------- progress channel (fd:3) ----------
++++ /Users/bag-yoseb/.claude/skills/blog/scripts/paste_to_naver.py	2026-05-05 23:46:06
+@@ -111,9 +111,59 @@
+     )
  
+ 
++_INLINE_TOKEN_RE = re.compile(
++    r"(\*\*[^*]+\*\*)"               # 1. **bold**
++    r"|(\*[^*]+\*)"                  # 2. *italic*
++    r"|(<u>[^<]+</u>)"                # 3. <u>...</u>
++    r"|(<mark>[^<]+</mark>)"          # 4. <mark>...</mark>
++    r"|(<span style=\"color:[^\"]+\">[^<]+</span>)"  # 5. color span
++    r"|(\[[^\]]+\]\([^\)]+\))"       # 6. [text](href)
++)
++
++
++def render_inline(text: str) -> str:
++    """Escape body text but preserve a fixed set of inline marks as HTML.
++
++    Supported (matches the editor's mark set):
++      **bold**, *italic*, <u>underline</u>, <mark>highlight</mark>,
++      <span style="color:#xxx">colored</span>, [link](href)
++    """
++    out: list[str] = []
++    last = 0
++    for m in _INLINE_TOKEN_RE.finditer(text):
++        if m.start() > last:
++            out.append(_html_escape(text[last:m.start()]))
++        token = m.group(0)
++        if m.group(1):
++            inner = _html_escape(token[2:-2])
++            out.append(f"<b>{inner}</b>")
++        elif m.group(2):
++            inner = _html_escape(token[1:-1])
++            out.append(f"<i>{inner}</i>")
++        elif m.group(3):
++            inner = _html_escape(token[3:-4])
++            out.append(f"<u>{inner}</u>")
++        elif m.group(4):
++            inner = _html_escape(token[6:-7])
++            out.append(f'<span style="background-color:#fff593;">{inner}</span>')
++        elif m.group(5):
++            # color spans are already trusted HTML from the editor — keep as-is
++            out.append(token)
++        elif m.group(6):
++            # [text](href)
++            close = token.index("](")
++            label = _html_escape(token[1:close])
++            href = _html_escape(token[close + 2:-1])
++            out.append(f'<a href="{href}" target="_blank">{label}</a>')
++        last = m.end()
++    if last < len(text):
++        out.append(_html_escape(text[last:]))
++    return "".join(out)
++
++
+ def body_html(text: str) -> str:
+-    t = _html_escape(text)
+-    return f'<p><span style="{BODY_SPAN_STYLE}">{t}</span></p>'
++    inner = render_inline(text)
++    return f'<p><span style="{BODY_SPAN_STYLE}">{inner}</span></p>'
+ 
+ 
+ def parse_to_chunks(md_text: str, images_dir: pathlib.Path | None) -> list[dict]:
+@@ -261,6 +311,22 @@
+         print(f"    [ERROR] Paste command exception: {e}", file=sys.stderr)
+ 
+ 
++# ---------- progress channel (fd:3) ----------
++
 +JSON_PROGRESS = "--json-progress" in sys.argv
 +if JSON_PROGRESS:
 +    sys.argv.remove("--json-progress")
- 
++
 +
 +def emit(payload: dict) -> None:
 +    if not JSON_PROGRESS:
@@ -25,7 +85,7 @@
  # ---------- main ----------
  
  def main():
-@@ -381,23 +397,30 @@
+@@ -381,23 +447,30 @@
          time.sleep(1)
      print("▶ 시작\n")
  
