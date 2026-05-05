@@ -165,7 +165,7 @@ function createWindow() {
     width: 1100,
     height: 760,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.cjs'),
+      preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
     },
