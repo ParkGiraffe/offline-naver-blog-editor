@@ -7,6 +7,7 @@ import { SectionHeading } from '../extensions/SectionHeading';
 import { Divider } from '../extensions/Divider';
 import { PhotoBlock } from '../extensions/PhotoBlock';
 import { inlineMarks } from '../extensions/inlineMarks';
+import { SlashMenu } from '../extensions/SlashMenu';
 import FloatingToolbar from '../components/FloatingToolbar';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
@@ -24,6 +25,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
         resolveSrc: (rel) => `corpus-image://${slug}/${encodeURI(rel)}`,
       }),
       ...inlineMarks,
+      SlashMenu,
     ],
     content: initial?.doc,
   }, [initial?.doc]);

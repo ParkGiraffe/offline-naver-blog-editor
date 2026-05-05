@@ -44,10 +44,12 @@
     "@tiptap/pm": "^2.27.2",
     "@tiptap/react": "^2.27.2",
     "@tiptap/starter-kit": "^2.27.2",
+    "@tiptap/suggestion": "^2.27.2",
     "electron-store": "^11.0.2",
     "gray-matter": "^4.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tippy.js": "^6.3.7",
     "zod": "^4.4.3"
   }
 }
