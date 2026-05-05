@@ -4,6 +4,7 @@ import { Channels } from './ipc';
 import { Corpus } from './corpus';
 import { DraftStore } from './draftStore';
 import { saveClipboardImage } from './clipboardImage';
+import { runMacro, cancelMacro } from './macroRunner';
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -39,8 +40,12 @@ app.whenReady().then(() => {
   ipcMain.handle(Channels.createDraft, (_e, fm: any) => store().create(fm));
   ipcMain.handle(Channels.pasteImage, (_e, slug: string) =>
     saveClipboardImage(store().imagesDir(slug)));
-  ipcMain.handle(Channels.runMacro, () => { throw new Error('macro not yet wired (T19)'); });
-  ipcMain.handle(Channels.cancelMacro, () => { throw new Error('macro not yet wired (T19)'); });
+  ipcMain.handle(Channels.runMacro, (e, slug: string) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    if (!win) throw new Error('no window');
+    runMacro(store().draftPath(slug), win);
+  });
+  ipcMain.handle(Channels.cancelMacro, () => cancelMacro());
 
   createWindow();
 });
