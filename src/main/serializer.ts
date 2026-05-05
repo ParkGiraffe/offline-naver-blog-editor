@@ -5,7 +5,7 @@ type TiptapNode = { type: string; attrs?: any; content?: TiptapNode[]; text?: st
 type DocNode = { type: 'doc'; content: TiptapNode[] };
 
 // Lazy quantifiers so bold can wrap content containing single `*` (e.g. `**a*b**`).
-const RX_INLINE = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(\[([^\]]+)\]\(([^)]+)\))/g;
+const RX_INLINE = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(<u>([^<]+)<\/u>)|(<mark>([^<]+)<\/mark>)|(\[([^\]]+)\]\(([^)]+)\))/g;
 
 function parseInline(text: string): TiptapNode[] {
   const out: TiptapNode[] = [];
@@ -15,7 +15,9 @@ function parseInline(text: string): TiptapNode[] {
     if (idx > last) out.push({ type: 'text', text: text.slice(last, idx) });
     if (m[2]) out.push({ type: 'text', text: m[2], marks: [{ type: 'bold' }] });
     else if (m[4]) out.push({ type: 'text', text: m[4], marks: [{ type: 'italic' }] });
-    else if (m[6]) out.push({ type: 'text', text: m[6], marks: [{ type: 'link', attrs: { href: m[7] } }] });
+    else if (m[6]) out.push({ type: 'text', text: m[6], marks: [{ type: 'underline' }] });
+    else if (m[8]) out.push({ type: 'text', text: m[8], marks: [{ type: 'highlight' }] });
+    else if (m[10]) out.push({ type: 'text', text: m[10], marks: [{ type: 'link', attrs: { href: m[11] } }] });
     last = idx + m[0].length;
   }
   if (last < text.length) out.push({ type: 'text', text: text.slice(last) });

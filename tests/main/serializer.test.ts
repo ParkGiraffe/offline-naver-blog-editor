@@ -52,6 +52,15 @@ describe('round-trip', () => {
   });
 });
 
+describe('round-trip with full mark set', () => {
+  it('round-trips marks/script.md byte-for-byte', () => {
+    const raw = fix('marks/script.md');
+    const { frontmatter, doc } = scriptMdToTiptap(raw);
+    const out = tiptapToScriptMd(frontmatter, doc);
+    expect(out).toBe(raw);
+  });
+});
+
 describe('edge cases', () => {
   const fmHeader = '---\ntitle: t\ncategory: c\ndate: 2026-05-05\n---\n\n# t\n\n';
 
