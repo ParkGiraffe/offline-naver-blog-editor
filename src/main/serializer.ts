@@ -59,3 +59,32 @@ export function scriptMdToTiptap(raw: string): { frontmatter: ScriptFrontmatter;
 
   return { frontmatter, doc: { type: 'doc', content } };
 }
+
+function inlineToMd(nodes: TiptapNode[] | undefined): string {
+  if (!nodes) return '';
+  return nodes.map(n => {
+    if (n.type !== 'text') return '';
+    let s = n.text || '';
+    for (const mk of n.marks || []) {
+      if (mk.type === 'bold') s = `**${s}**`;
+      else if (mk.type === 'italic') s = `*${s}*`;
+      else if (mk.type === 'link') s = `[${s}](${mk.attrs.href})`;
+      else if (mk.type === 'underline') s = `<u>${s}</u>`;
+      else if (mk.type === 'highlight') s = `<mark>${s}</mark>`;
+      else if (mk.type === 'textColor') s = `<span style="color:${mk.attrs.color}">${s}</span>`;
+    }
+    return s;
+  }).join('');
+}
+
+export function tiptapToScriptMd(fm: ScriptFrontmatter, doc: TiptapNode): string {
+  const head = `---\ntitle: ${fm.title}\ncategory: ${fm.category}\ndate: ${fm.date}\n---\n\n# ${fm.title}\n\n`;
+  const body = (doc.content || []).map(n => {
+    if (n.type === 'paragraph') return inlineToMd(n.content) + '\n';
+    if (n.type === 'sectionHeading') return `## ${n.content?.[0]?.text || ''}\n`;
+    if (n.type === 'divider') return `---\n`;
+    if (n.type === 'photoBlock') return `![${n.attrs?.alt || ''}](${n.attrs?.src})\n`;
+    return '';
+  }).join('\n');
+  return head + body.trimEnd() + '\n';
+}

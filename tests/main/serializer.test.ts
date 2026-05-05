@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { scriptMdToTiptap } from '@main/serializer';
+import { scriptMdToTiptap, tiptapToScriptMd } from '@main/serializer';
 
 const fix = (p: string) => readFileSync(join(__dirname, '../fixtures/sample-drafts', p), 'utf8');
 
@@ -40,5 +40,14 @@ describe('scriptMdToTiptap', () => {
     expect(allInline.some((t: any) => t.marks?.some((m: any) => m.type === 'italic'))).toBe(true);
     const linked = allInline.find((t: any) => t.marks?.some((m: any) => m.type === 'link'));
     expect(linked?.marks.find((m: any) => m.type === 'link').attrs.href).toBe('https://example.com');
+  });
+});
+
+describe('round-trip', () => {
+  it('preserves byte-for-byte on basic fixture', () => {
+    const raw = fix('basic/script.md');
+    const { frontmatter, doc } = scriptMdToTiptap(raw);
+    const out = tiptapToScriptMd(frontmatter, doc);
+    expect(out).toBe(raw);
   });
 });
