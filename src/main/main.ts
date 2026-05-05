@@ -1,5 +1,9 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
+import { Channels } from './ipc';
+import { Corpus } from './corpus';
+import { DraftStore } from './draftStore';
+import { saveClipboardImage } from './clipboardImage';
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -18,5 +22,26 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow);
+const corpus = new Corpus();
+function store(): DraftStore {
+  const p = corpus.getPath();
+  if (!p) throw new Error('corpus path not set');
+  return new DraftStore(p);
+}
+
+app.whenReady().then(() => {
+  ipcMain.handle(Channels.getCorpusPath, () => corpus.getPath());
+  ipcMain.handle(Channels.setCorpusPath, (_e, p: string) => corpus.setPath(p));
+  ipcMain.handle(Channels.listDrafts, () => corpus.listDrafts());
+  ipcMain.handle(Channels.loadDraft, (_e, slug: string) => store().load(slug));
+  ipcMain.handle(Channels.saveDraft, (_e, slug: string, fm: any, doc: any, meta: any) =>
+    store().save(slug, fm, doc, meta));
+  ipcMain.handle(Channels.createDraft, (_e, fm: any) => store().create(fm));
+  ipcMain.handle(Channels.pasteImage, (_e, slug: string) =>
+    saveClipboardImage(store().imagesDir(slug)));
+  ipcMain.handle(Channels.runMacro, () => { throw new Error('macro not yet wired (T19)'); });
+  ipcMain.handle(Channels.cancelMacro, () => { throw new Error('macro not yet wired (T19)'); });
+
+  createWindow();
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
