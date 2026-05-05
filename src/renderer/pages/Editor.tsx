@@ -9,11 +9,13 @@ import { PhotoBlock } from '../extensions/PhotoBlock';
 import { inlineMarks } from '../extensions/inlineMarks';
 import { SlashMenu } from '../extensions/SlashMenu';
 import FloatingToolbar from '../components/FloatingToolbar';
+import MetaPanel from '../components/MetaPanel';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
   const [fm, setFm] = useState<any>(null);
   const [meta, setMeta] = useState<any>(null);
+  const [metaOpen, setMetaOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -44,9 +46,12 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
 
   return (
     <div style={{ padding: 24, maxWidth: 760, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <button onClick={onBack}>← 글 목록</button>
-        <span style={{ color: '#888', fontSize: 13 }}>자동 저장됨</span>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span style={{ color: '#888', fontSize: 13 }}>자동 저장됨</span>
+          <button onClick={() => setMetaOpen(true)} style={{ padding: '4px 10px' }}>ⓘ 메타</button>
+        </div>
       </div>
       <input
         value={fm?.title || ''}
@@ -68,6 +73,12 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
         style={{ minHeight: 400, fontSize: 16, lineHeight: 1.7 }}
       />
       <FloatingToolbar editor={editor} />
+      <MetaPanel
+        open={metaOpen}
+        onClose={() => setMetaOpen(false)}
+        meta={meta}
+        onChange={setMeta}
+      />
     </div>
   );
 }
