@@ -1,0 +1,72 @@
+--- /Users/bag-yoseb/.claude/skills/blog/scripts/paste_to_naver.py.bak	2026-05-05 23:39:19
++++ /Users/bag-yoseb/.claude/skills/blog/scripts/paste_to_naver.py	2026-05-05 23:41:45
+@@ -259,8 +259,24 @@
+             print(f"    [ERROR] Auto-paste failed: {result.stderr.strip()}", file=sys.stderr)
+     except Exception as e:
+         print(f"    [ERROR] Paste command exception: {e}", file=sys.stderr)
++
++
++# ---------- progress channel (fd:3) ----------
+ 
++JSON_PROGRESS = "--json-progress" in sys.argv
++if JSON_PROGRESS:
++    sys.argv.remove("--json-progress")
+ 
++
++def emit(payload: dict) -> None:
++    if not JSON_PROGRESS:
++        return
++    try:
++        os.write(3, (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8"))
++    except OSError:
++        pass
++
++
+ # ---------- main ----------
+ 
+ def main():
+@@ -381,23 +397,30 @@
+         time.sleep(1)
+     print("▶ 시작\n")
+ 
+-    for i, c in enumerate(chunks, 1):
+-        label = "Text " if c["type"] == "html" else "Image"
+-        if c["type"] == "html":
+-            preview = re.sub(r"<[^>]+>", " ", c["content"])[:50]
+-            print(f"[{i:2d}/{len(chunks)}] {label}: {preview}")
+-            copy_html_to_clipboard(c["content"])
+-            paste_cmd()
+-            time.sleep(args.html_sleep)
+-        else:
+-            name = pathlib.Path(c["path"]).name
+-            print(f"[{i:2d}/{len(chunks)}] {label}: {name}")
+-            if copy_image_file_to_clipboard(c["path"]):
++    try:
++        for i, c in enumerate(chunks, 1):
++            label = "Text " if c["type"] == "html" else "Image"
++            if c["type"] == "html":
++                preview = re.sub(r"<[^>]+>", " ", c["content"])[:50]
++                emit({"type": "progress", "i": i, "n": len(chunks), "kind": "html", "detail": preview})
++                print(f"[{i:2d}/{len(chunks)}] {label}: {preview}")
++                copy_html_to_clipboard(c["content"])
+                 paste_cmd()
+-                time.sleep(args.image_sleep)
++                time.sleep(args.html_sleep)
+             else:
+-                print("    [skip]")
++                name = pathlib.Path(c["path"]).name
++                emit({"type": "progress", "i": i, "n": len(chunks), "kind": "image", "detail": name})
++                print(f"[{i:2d}/{len(chunks)}] {label}: {name}")
++                if copy_image_file_to_clipboard(c["path"]):
++                    paste_cmd()
++                    time.sleep(args.image_sleep)
++                else:
++                    print("    [skip]")
++    except Exception as e:
++        emit({"type": "done", "ok": False, "error": str(e)})
++        raise
+ 
++    emit({"type": "done", "ok": True})
+     print("\n▶ 완료. 네이버 에디터에서 결과 확인.")
+ 
+ 
