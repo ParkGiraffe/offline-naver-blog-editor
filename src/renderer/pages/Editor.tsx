@@ -6,6 +6,8 @@ import { useAutoSave } from '../hooks/useAutoSave';
 import { SectionHeading } from '../extensions/SectionHeading';
 import { Divider } from '../extensions/Divider';
 import { PhotoBlock } from '../extensions/PhotoBlock';
+import { inlineMarks } from '../extensions/inlineMarks';
+import FloatingToolbar from '../components/FloatingToolbar';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
@@ -21,6 +23,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
         onPaste: () => window.giraffe.pasteImage(slug),
         resolveSrc: (rel) => `corpus-image://${slug}/${encodeURI(rel)}`,
       }),
+      ...inlineMarks,
     ],
     content: initial?.doc,
   }, [initial?.doc]);
@@ -62,6 +65,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
         editor={editor}
         style={{ minHeight: 400, fontSize: 16, lineHeight: 1.7 }}
       />
+      <FloatingToolbar editor={editor} />
     </div>
   );
 }
