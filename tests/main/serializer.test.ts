@@ -51,3 +51,22 @@ describe('round-trip', () => {
     expect(out).toBe(raw);
   });
 });
+
+describe('edge cases', () => {
+  const fmHeader = '---\ntitle: t\ncategory: c\ndate: 2026-05-05\n---\n\n# t\n\n';
+
+  it('bold containing single asterisk: **a*b**', () => {
+    const { doc } = scriptMdToTiptap(fmHeader + '**a*b** end\n');
+    const para = doc.content.find((n) => n.type === 'paragraph')!;
+    const bold = (para.content as any[]).find((c) => c.marks?.some((m: any) => m.type === 'bold'));
+    expect(bold.text).toBe('a*b');
+  });
+
+  it('normalizes CRLF line endings', () => {
+    const { doc } = scriptMdToTiptap(fmHeader.replace(/\n/g, '\r\n') + 'line1\r\nline2\r\n');
+    const para = doc.content.find((n) => n.type === 'paragraph')!;
+    const text = (para.content as any[]).map((c) => c.text).join('');
+    expect(text).not.toContain('\r');
+    expect(text).toBe('line1\nline2');
+  });
+});

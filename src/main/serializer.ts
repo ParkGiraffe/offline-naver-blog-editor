@@ -2,8 +2,10 @@ import matter from 'gray-matter';
 import { ScriptFrontmatter, ScriptFrontmatterSchema } from '@shared/schema';
 
 type TiptapNode = { type: string; attrs?: any; content?: TiptapNode[]; text?: string; marks?: any[] };
+type DocNode = { type: 'doc'; content: TiptapNode[] };
 
-const RX_INLINE = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(\[([^\]]+)\]\(([^)]+)\))/g;
+// Lazy quantifiers so bold can wrap content containing single `*` (e.g. `**a*b**`).
+const RX_INLINE = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(\[([^\]]+)\]\(([^)]+)\))/g;
 
 function parseInline(text: string): TiptapNode[] {
   const out: TiptapNode[] = [];
@@ -20,14 +22,14 @@ function parseInline(text: string): TiptapNode[] {
   return out;
 }
 
-export function scriptMdToTiptap(raw: string): { frontmatter: ScriptFrontmatter; doc: TiptapNode } {
+export function scriptMdToTiptap(raw: string): { frontmatter: ScriptFrontmatter; doc: DocNode } {
   const parsed = matter(raw);
   const rawData = { ...parsed.data };
   if (rawData.date instanceof Date) {
     rawData.date = rawData.date.toISOString().slice(0, 10);
   }
   const frontmatter = ScriptFrontmatterSchema.parse(rawData);
-  const lines = parsed.content.split('\n');
+  const lines = parsed.content.replace(/\r\n?/g, '\n').split('\n');
   const content: TiptapNode[] = [];
   let buf: string[] = [];
 
@@ -77,7 +79,7 @@ function inlineToMd(nodes: TiptapNode[] | undefined): string {
   }).join('');
 }
 
-export function tiptapToScriptMd(fm: ScriptFrontmatter, doc: TiptapNode): string {
+export function tiptapToScriptMd(fm: ScriptFrontmatter, doc: DocNode | TiptapNode): string {
   const head = `---\ntitle: ${fm.title}\ncategory: ${fm.category}\ndate: ${fm.date}\n---\n\n# ${fm.title}\n\n`;
   const body = (doc.content || []).map(n => {
     if (n.type === 'paragraph') return inlineToMd(n.content) + '\n';
