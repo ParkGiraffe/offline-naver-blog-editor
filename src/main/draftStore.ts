@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { scriptMdToTiptap, tiptapToScriptMd } from './serializer';
-import { DraftMeta, DraftMetaSchema, ScriptFrontmatter } from '@shared/schema';
+import { DraftMeta, DraftMetaSchema, ScriptFrontmatter, ScriptFrontmatterSchema } from '@shared/schema';
 
 export class DraftStore {
   constructor(private root: string) {}
@@ -9,6 +9,9 @@ export class DraftStore {
   private dir(slug: string) { return join(this.root, 'drafts', slug); }
 
   create(fm: ScriptFrontmatter): string {
+    ScriptFrontmatterSchema.parse(fm);
+    // Convention: original draft keeps the bare slug; collisions get -2, -3, ...
+    // (matches WordPress/Naver behaviour — `-1` is never used).
     const baseSlug = `${fm.date}-${slugify(fm.title)}`;
     let slug = baseSlug, n = 1;
     while (existsSync(this.dir(slug))) { n += 1; slug = `${baseSlug}-${n}`; }
@@ -28,10 +31,16 @@ export class DraftStore {
     return { frontmatter, doc, meta };
   }
 
+  // `doc` is `any` — TipTap JSON shape is loose by design; the serializer
+  // silently skips unknown node types rather than throwing.
   save(slug: string, fm: ScriptFrontmatter, doc: any, meta: DraftMeta) {
+    ScriptFrontmatterSchema.parse(fm);
     DraftMetaSchema.parse(meta);
-    writeFileSync(join(this.dir(slug), 'script.md'), tiptapToScriptMd(fm, doc));
-    writeFileSync(join(this.dir(slug), 'meta.json'), JSON.stringify(meta, null, 2));
+    // Render both first so a serialization error doesn't leave files out of sync.
+    const mdContent = tiptapToScriptMd(fm, doc);
+    const metaContent = JSON.stringify(meta, null, 2);
+    writeFileSync(join(this.dir(slug), 'script.md'), mdContent);
+    writeFileSync(join(this.dir(slug), 'meta.json'), metaContent);
   }
 
   draftPath(slug: string) { return this.dir(slug); }
@@ -41,6 +50,7 @@ export class DraftStore {
 function slugify(s: string): string {
   return s.toLowerCase()
     .replace(/[^a-z0-9가-힣]+/g, '-')
+    .slice(0, 60)
     .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'untitled';
+    || 'untitled';
 }
