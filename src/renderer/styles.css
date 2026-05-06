@@ -1,0 +1,34 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #212529;
+  background: #fff;
+}
+
+button {
+  font-family: inherit;
+}
+
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror:focus,
+.ProseMirror:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.ProseMirror p {
+  margin: 0.4em 0;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #aaa;
+  pointer-events: none;
+  height: 0;
+  float: left;
+}

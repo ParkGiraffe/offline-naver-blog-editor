@@ -41,6 +41,11 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
       Divider,
       PhotoBlock.configure({
         onPaste: () => window.giraffe.pasteImage(slug),
+        onDrop: async (file) => {
+          const buf = await file.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          return window.giraffe.dropImage(slug, file.name, base64);
+        },
         resolveSrc: (rel) => `corpus-image://${slug}/${encodeURI(rel)}`,
       }),
       ...inlineMarks,

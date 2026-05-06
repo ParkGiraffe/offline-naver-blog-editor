@@ -3,7 +3,7 @@ import { join } from 'path';
 import { Channels } from './ipc';
 import { Corpus } from './corpus';
 import { DraftStore } from './draftStore';
-import { saveClipboardImage } from './clipboardImage';
+import { saveClipboardImage, saveDroppedImage } from './clipboardImage';
 import { runMacro, cancelMacro } from './macroRunner';
 
 protocol.registerSchemesAsPrivileged([
@@ -54,6 +54,8 @@ app.whenReady().then(() => {
   ipcMain.handle(Channels.createDraft, (_e, fm: any) => store().create(fm));
   ipcMain.handle(Channels.pasteImage, (_e, slug: string) =>
     saveClipboardImage(store().imagesDir(slug)));
+  ipcMain.handle(Channels.dropImage, (_e, slug: string, name: string, base64: string) =>
+    saveDroppedImage(store().imagesDir(slug), name, base64));
   ipcMain.handle(Channels.runMacro, (e, slug: string) => {
     const win = BrowserWindow.fromWebContents(e.sender);
     if (!win) throw new Error('no window');
