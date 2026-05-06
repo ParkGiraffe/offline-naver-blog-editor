@@ -11,14 +11,23 @@ button {
   font-family: inherit;
 }
 
-.ProseMirror {
-  outline: none;
+.ProseMirror,
+.ProseMirror:focus,
+.ProseMirror:focus-visible,
+.ProseMirror *:focus,
+[contenteditable]:focus,
+[contenteditable]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.ProseMirror:focus,
-.ProseMirror:focus-visible {
-  outline: none;
-  box-shadow: none;
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+button:focus,
+button:focus-visible {
+  outline: none !important;
 }
 
 .ProseMirror p {
