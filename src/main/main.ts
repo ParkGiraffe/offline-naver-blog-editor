@@ -1,10 +1,12 @@
 import { app, BrowserWindow, ipcMain, protocol, net } from 'electron';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 import { Channels } from './ipc';
 import { Corpus } from './corpus';
 import { DraftStore } from './draftStore';
 import { saveClipboardImage, saveDroppedImage } from './clipboardImage';
 import { runMacro, cancelMacro } from './macroRunner';
+import { resolveCorpusImagePath } from './corpusImageProtocol';
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'corpus-image', privileges: { secure: true, supportFetchAPI: true, standard: true } },
@@ -36,13 +38,11 @@ function store(): DraftStore {
 
 app.whenReady().then(() => {
   protocol.handle('corpus-image', (req) => {
-    const url = new URL(req.url);
-    const slug = url.host;
-    const rel = decodeURIComponent(url.pathname.slice(1));
     const root = corpus.getPath();
     if (!root) return new Response('corpus not set', { status: 500 });
-    const filePath = join(root, 'drafts', slug, rel);
-    return net.fetch('file://' + filePath);
+    const filePath = resolveCorpusImagePath(req.url, root);
+    if (!filePath) return new Response('bad path', { status: 400 });
+    return net.fetch(pathToFileURL(filePath).href);
   });
 
   ipcMain.handle(Channels.getCorpusPath, () => corpus.getPath());
@@ -54,8 +54,8 @@ app.whenReady().then(() => {
   ipcMain.handle(Channels.createDraft, (_e, fm: any) => store().create(fm));
   ipcMain.handle(Channels.pasteImage, (_e, slug: string) =>
     saveClipboardImage(store().imagesDir(slug)));
-  ipcMain.handle(Channels.dropImage, (_e, slug: string, name: string, base64: string) =>
-    saveDroppedImage(store().imagesDir(slug), name, base64));
+  ipcMain.handle(Channels.dropImage, (_e, slug: string, name: string, bytes: Uint8Array) =>
+    saveDroppedImage(store().imagesDir(slug), name, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)));
   ipcMain.handle(Channels.runMacro, (e, slug: string) => {
     const win = BrowserWindow.fromWebContents(e.sender);
     if (!win) throw new Error('no window');

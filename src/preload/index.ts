@@ -10,8 +10,8 @@ contextBridge.exposeInMainWorld('giraffe', {
     ipcRenderer.invoke(Channels.saveDraft, slug, fm, doc, meta),
   createDraft: (fm: any) => ipcRenderer.invoke(Channels.createDraft, fm),
   pasteImage: (slug: string) => ipcRenderer.invoke(Channels.pasteImage, slug),
-  dropImage: (slug: string, name: string, base64: string) =>
-    ipcRenderer.invoke(Channels.dropImage, slug, name, base64),
+  dropImage: (slug: string, name: string, bytes: Uint8Array) =>
+    ipcRenderer.invoke(Channels.dropImage, slug, name, bytes),
   runMacro: (slug: string) => ipcRenderer.invoke(Channels.runMacro, slug),
   cancelMacro: () => ipcRenderer.invoke(Channels.cancelMacro),
   onMacroProgress: (cb: (e: any) => void) => {

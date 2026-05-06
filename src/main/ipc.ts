@@ -6,6 +6,7 @@ export const Channels = {
   saveDraft: 'drafts:save',
   createDraft: 'drafts:create',
   pasteImage: 'drafts:pasteImage',
+  dropImage: 'drafts:dropImage',
   runMacro: 'macro:run',
   cancelMacro: 'macro:cancel',
   macroProgress: 'macro:progress',

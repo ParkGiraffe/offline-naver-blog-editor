@@ -12,6 +12,7 @@ import FloatingToolbar from '../components/FloatingToolbar';
 import MetaPanel from '../components/MetaPanel';
 import Toast from '../components/Toast';
 import { useMacroProgress } from '../hooks/useMacroProgress';
+import { buildCorpusImageUrl } from '@shared/corpusImageUrl';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
@@ -19,6 +20,21 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const [meta, setMeta] = useState<any>(null);
   const [metaOpen, setMetaOpen] = useState(false);
   const macroState = useMacroProgress();
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      SectionHeading,
+      Divider,
+      PhotoBlock.configure({
+        onPaste: () => window.giraffe.pasteImage(slug),
+        resolveSrc: (rel) => buildCorpusImageUrl(slug, rel),
+      }),
+      ...inlineMarks,
+      SlashMenu,
+    ],
+    content: initial?.doc,
+  }, [initial?.doc]);
 
   const send = async () => {
     if (!editor || !fm) return;
@@ -34,21 +50,6 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
     await window.giraffe.runMacro(slug);
   };
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      SectionHeading,
-      Divider,
-      PhotoBlock.configure({
-        onPaste: () => window.giraffe.pasteImage(slug),
-        resolveSrc: (rel) => `corpus-image://${slug}/${encodeURI(rel)}`,
-      }),
-      ...inlineMarks,
-      SlashMenu,
-    ],
-    content: initial?.doc,
-  }, [initial?.doc]);
-
   useEffect(() => {
     if (initial) {
       setFm(initial.frontmatter);
@@ -59,37 +60,35 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const doc = editor?.getJSON();
   useAutoSave(slug, fm, doc, meta, !!fm && !!doc);
 
-  // Direct DOM-level drop handler — ProseMirror's plugin handleDrop doesn't
-  // reliably fire for OS file drops. Capture phase so we win over any
-  // ProseMirror internal handling.
+  // Drop handler attached at the window level so we always receive image
+  // file drops. App.tsx prevents the default file:// navigation.
   useEffect(() => {
     if (!editor) return;
-    const dom = editor.view.dom;
     const onDrop = async (e: DragEvent) => {
-      const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith('image/'));
-      if (files.length === 0) return;
+      const target = e.target as Element | null;
+      if (!target?.closest('.ProseMirror')) return;
+      const imageFiles = Array.from(e.dataTransfer?.files || []).filter((f) =>
+        f.type.startsWith('image/'),
+      );
+      if (imageFiles.length === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      const coords = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
-      let pos = coords?.pos ?? editor.state.selection.from;
-      for (const f of files) {
-        const buf = await f.arrayBuffer();
-        // Convert to base64 in chunks to avoid stack overflow on large files.
-        const bytes = new Uint8Array(buf);
-        let bin = '';
-        const chunk = 0x8000;
-        for (let i = 0; i < bytes.length; i += chunk) {
-          bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      try {
+        const coords = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+        let pos = coords?.pos ?? editor.state.selection.from;
+        for (const f of imageFiles) {
+          const bytes = new Uint8Array(await f.arrayBuffer());
+          const rel = await window.giraffe.dropImage(slug, f.name || 'image.png', bytes);
+          if (!rel) continue;
+          editor.chain().insertContentAt(pos, { type: 'photoBlock', attrs: { src: rel, alt: '' } }).run();
+          pos += 1;
         }
-        const base64 = btoa(bin);
-        const rel = await window.giraffe.dropImage(slug, f.name, base64);
-        if (!rel) continue;
-        editor.chain().insertContentAt(pos, { type: 'photoBlock', attrs: { src: rel, alt: '' } }).run();
-        pos += 1;
+      } catch (err) {
+        window.alert('이미지 추가 실패: ' + (err as Error).message);
       }
     };
-    dom.addEventListener('drop', onDrop, { capture: true });
-    return () => dom.removeEventListener('drop', onDrop, { capture: true });
+    window.addEventListener('drop', onDrop, { capture: true });
+    return () => window.removeEventListener('drop', onDrop, { capture: true });
   }, [editor, slug]);
 
   if (!initial) return <div style={{ padding: 24 }}>Loading…</div>;

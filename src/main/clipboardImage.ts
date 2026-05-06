@@ -10,10 +10,8 @@ export function saveClipboardImage(imagesDir: string): string | null {
   return writeBuffer(imagesDir, buf, '.png');
 }
 
-export function saveDroppedImage(imagesDir: string, originalName: string, base64: string): string | null {
-  if (!base64) return null;
-  const buf = Buffer.from(base64, 'base64');
-  if (buf.length === 0) return null;
+export function saveDroppedImage(imagesDir: string, originalName: string, buf: Buffer): string | null {
+  if (!buf || buf.length === 0) return null;
   const ext = (extname(originalName).toLowerCase() || '.png');
   const allowed = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
   return writeBuffer(imagesDir, buf, allowed.has(ext) ? ext : '.png');
