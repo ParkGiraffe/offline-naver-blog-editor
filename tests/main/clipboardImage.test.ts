@@ -17,10 +17,10 @@ vi.mock('electron', () => ({
 
 import { saveClipboardImage } from '@main/clipboardImage';
 
-describe('saveClipboardImage', () => {
+describe('클립보드 이미지 저장', () => {
   beforeEach(() => { isEmpty = false; });
 
-  it('writes a PNG and returns images/<n>-<hash>.png', () => {
+  it('클립보드 이미지를 PNG로 저장하고 상대 경로를 돌려준다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'images-'));
     const rel = saveClipboardImage(dir);
     expect(rel).toMatch(/^images\/\d+-[0-9a-f]+\.png$/);
@@ -29,14 +29,14 @@ describe('saveClipboardImage', () => {
     expect(readdirSync(dir)).toHaveLength(1);
   });
 
-  it('returns null when clipboard has no image', () => {
+  it('클립보드에 이미지가 없으면 저장하지 않고 null을 돌려준다', () => {
     isEmpty = true;
     const dir = mkdtempSync(join(tmpdir(), 'images-'));
     expect(saveClipboardImage(dir)).toBeNull();
     expect(readdirSync(dir)).toHaveLength(0);
   });
 
-  it('uses a counter so two pastes with the same buffer get distinct names', () => {
+  it('같은 이미지를 두 번 붙여도 별도 파일로 저장된다', () => {
     const dir = mkdtempSync(join(tmpdir(), 'images-'));
     const a = saveClipboardImage(dir)!;
     const b = saveClipboardImage(dir)!;
