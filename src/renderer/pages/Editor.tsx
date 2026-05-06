@@ -19,7 +19,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const [fm, setFm] = useState<any>(null);
   const [meta, setMeta] = useState<any>(null);
   const [metaOpen, setMetaOpen] = useState(false);
-  const macroState = useMacroProgress();
+  const [macroState, markStarting] = useMacroProgress();
 
   const editor = useEditor({
     extensions: [
@@ -39,13 +39,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
   const send = async () => {
     if (!editor || !fm) return;
     const json = editor.getJSON();
-    const blocks = (json.content || []).length;
-    const photos = (json.content || []).filter((n: any) => n.type === 'photoBlock').length;
-    const ok = window.confirm(
-      `${blocks} 블록 (사진 ${photos}장) 보낼게요.\n` +
-      `네이버 블로그 새글 창의 본문 영역을 클릭한 뒤 확인을 누르세요.`
-    );
-    if (!ok) return;
+    markStarting();
     await window.giraffe.saveDraft(slug, fm, json, meta);
     await window.giraffe.runMacro(slug);
   };

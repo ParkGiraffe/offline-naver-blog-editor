@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 import { BrowserWindow } from 'electron';
+import { join } from 'path';
 import { findPython3, pasteScriptPath } from './pythonResolver';
 import { Channels } from './ipc';
 
@@ -11,10 +12,16 @@ export function runMacro(draftPath: string, win: BrowserWindow): void {
   if (current) throw new Error('macro already running');
   const py = findPython3();
   const script = pasteScriptPath();
-  // stdio: ignore stdin, pipe stdout (human log) and stderr, pipe fd:3 (json progress)
-  const child = spawn(py, [script, draftPath, '--json-progress'], {
-    stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
-  });
+  const imagesDir = join(draftPath, 'images');
+  // --images: editor always stores images at <draft>/images/, so pass that
+  //   explicitly (meta.json doesn't carry images.source_folder for editor drafts).
+  // --start 5: 5-second countdown before first paste — user time to ⌘+Tab to Naver.
+  // stdio: ignore stdin, pipe stdout (human log) and stderr, pipe fd:3 (json progress).
+  const child = spawn(
+    py,
+    [script, draftPath, '--images', imagesDir, '--start', '5', '--json-progress'],
+    { stdio: ['ignore', 'pipe', 'pipe', 'pipe'] },
+  );
   current = child;
 
   let fd3Buffer = '';

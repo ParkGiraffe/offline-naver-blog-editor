@@ -31,6 +31,23 @@ export default function Toast({ state, onCancel }: Props) {
     >
       {state.error ? (
         <span>실패: {state.error}</span>
+      ) : state.starting ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span>5초 안에 네이버 본문 영역을 클릭하세요. 자동 paste 시작됨.</span>
+          <button
+            onClick={onCancel}
+            style={{
+              background: 'transparent',
+              border: '1px solid white',
+              color: 'white',
+              borderRadius: 3,
+              padding: '2px 8px',
+              cursor: 'pointer',
+            }}
+          >
+            취소
+          </button>
+        </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span>
