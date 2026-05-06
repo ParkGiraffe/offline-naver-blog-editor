@@ -22,7 +22,15 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
 
   const send = async () => {
     if (!editor || !fm) return;
-    await window.giraffe.saveDraft(slug, fm, editor.getJSON(), meta);
+    const json = editor.getJSON();
+    const blocks = (json.content || []).length;
+    const photos = (json.content || []).filter((n: any) => n.type === 'photoBlock').length;
+    const ok = window.confirm(
+      `${blocks} 블록 (사진 ${photos}장) 보낼게요.\n` +
+      `네이버 블로그 새글 창의 본문 영역을 클릭한 뒤 확인을 누르세요.`
+    );
+    if (!ok) return;
+    await window.giraffe.saveDraft(slug, fm, json, meta);
     await window.giraffe.runMacro(slug);
   };
 
