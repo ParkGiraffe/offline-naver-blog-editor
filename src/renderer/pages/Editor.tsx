@@ -10,12 +10,21 @@ import { inlineMarks } from '../extensions/inlineMarks';
 import { SlashMenu } from '../extensions/SlashMenu';
 import FloatingToolbar from '../components/FloatingToolbar';
 import MetaPanel from '../components/MetaPanel';
+import Toast from '../components/Toast';
+import { useMacroProgress } from '../hooks/useMacroProgress';
 
 export default function Editor({ slug, onBack }: { slug: string; onBack: () => void }) {
   const initial = useDraft(slug);
   const [fm, setFm] = useState<any>(null);
   const [meta, setMeta] = useState<any>(null);
   const [metaOpen, setMetaOpen] = useState(false);
+  const macroState = useMacroProgress();
+
+  const send = async () => {
+    if (!editor || !fm) return;
+    await window.giraffe.saveDraft(slug, fm, editor.getJSON(), meta);
+    await window.giraffe.runMacro(slug);
+  };
 
   const editor = useEditor({
     extensions: [
@@ -51,6 +60,12 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <span style={{ color: '#888', fontSize: 13 }}>자동 저장됨</span>
           <button onClick={() => setMetaOpen(true)} style={{ padding: '4px 10px' }}>ⓘ 메타</button>
+          <button
+            onClick={send}
+            style={{ background: '#19ce60', color: 'white', padding: '6px 14px', border: 0, borderRadius: 4 }}
+          >
+            보내기
+          </button>
         </div>
       </div>
       <input
@@ -79,6 +94,7 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
         meta={meta}
         onChange={setMeta}
       />
+      <Toast state={macroState} onCancel={() => window.giraffe.cancelMacro()} />
     </div>
   );
 }
