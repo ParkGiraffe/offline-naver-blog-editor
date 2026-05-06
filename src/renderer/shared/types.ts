@@ -5,7 +5,10 @@ export interface GiraffeBridge {
   loadDraft(slug: string): Promise<{ frontmatter: any; doc: any; meta: any }>;
   saveDraft(slug: string, fm: any, doc: any, meta: any): Promise<void>;
   createDraft(fm: any): Promise<string>;
+  deleteDraft(slug: string): Promise<void>;
+  deleteAllDrafts(): Promise<number>;
   pasteImage(slug: string): Promise<string | null>;
+  dropImage(slug: string, name: string, bytes: Uint8Array): Promise<string | null>;
   runMacro(slug: string): Promise<void>;
   cancelMacro(): Promise<void>;
   onMacroProgress(cb: (e: { type: 'progress'; i: number; n: number; kind: string; detail?: string } | { type: 'done'; ok: boolean; error?: string }) => void): () => void;

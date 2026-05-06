@@ -52,6 +52,8 @@ app.whenReady().then(() => {
   ipcMain.handle(Channels.saveDraft, (_e, slug: string, fm: any, doc: any, meta: any) =>
     store().save(slug, fm, doc, meta));
   ipcMain.handle(Channels.createDraft, (_e, fm: any) => store().create(fm));
+  ipcMain.handle(Channels.deleteDraft, (_e, slug: string) => store().delete(slug));
+  ipcMain.handle(Channels.deleteAllDrafts, () => store().deleteAll());
   ipcMain.handle(Channels.pasteImage, (_e, slug: string) =>
     saveClipboardImage(store().imagesDir(slug)));
   ipcMain.handle(Channels.dropImage, (_e, slug: string, name: string, bytes: Uint8Array) =>

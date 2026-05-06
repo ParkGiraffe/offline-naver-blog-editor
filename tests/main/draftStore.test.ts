@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, existsSync } from 'fs';
+import { mkdtempSync, mkdirSync, existsSync, writeFileSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { DraftStore } from '@main/draftStore';
@@ -64,5 +64,36 @@ describe('드래프트 저장소', () => {
     const slug = store.create({ title: 'x', category: 'y', date: '2026-05-05' });
     expect(store.draftPath(slug)).toBe(join(root, 'drafts', slug));
     expect(store.imagesDir(slug)).toBe(join(root, 'drafts', slug, 'images'));
+  });
+
+  it('드래프트 하나를 삭제하면 폴더가 통째로 사라진다', () => {
+    const root = tmpCorpus();
+    const store = new DraftStore(root);
+    const slug = store.create({ title: 'x', category: 'y', date: '2026-05-05' });
+    expect(existsSync(join(root, 'drafts', slug))).toBe(true);
+    store.delete(slug);
+    expect(existsSync(join(root, 'drafts', slug))).toBe(false);
+  });
+
+  it('존재하지 않는 슬러그를 삭제해도 조용히 넘어간다', () => {
+    const root = tmpCorpus();
+    const store = new DraftStore(root);
+    expect(() => store.delete('없는-슬러그')).not.toThrow();
+  });
+
+  it('전체 삭제는 drafts/ 안만 비우고 학습 데이터는 보존한다', () => {
+    const root = tmpCorpus();
+    writeFileSync(join(root, 'style-guide.md'), 'guide content');
+    mkdirSync(join(root, 'posts'), { recursive: true });
+    writeFileSync(join(root, 'posts', '1.md'), 'a learned post');
+
+    const store = new DraftStore(root);
+    store.create({ title: 'a', category: 'x', date: '2026-05-05' });
+    store.create({ title: 'b', category: 'x', date: '2026-05-05' });
+
+    expect(store.deleteAll()).toBe(2);
+    expect(existsSync(join(root, 'drafts'))).toBe(true);
+    expect(existsSync(join(root, 'style-guide.md'))).toBe(true);
+    expect(readFileSync(join(root, 'posts', '1.md'), 'utf8')).toBe('a learned post');
   });
 });

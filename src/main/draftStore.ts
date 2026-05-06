@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync, statSync } from 'fs';
 import { join } from 'path';
 import { scriptMdToTiptap, tiptapToScriptMd } from './serializer';
 import { DraftMeta, DraftMetaSchema, ScriptFrontmatter, ScriptFrontmatterSchema } from '@shared/schema';
@@ -7,6 +7,8 @@ export class DraftStore {
   constructor(private root: string) {}
 
   private dir(slug: string) { return join(this.root, 'drafts', slug); }
+
+  private draftsRoot() { return join(this.root, 'drafts'); }
 
   create(fm: ScriptFrontmatter): string {
     ScriptFrontmatterSchema.parse(fm);
@@ -41,6 +43,28 @@ export class DraftStore {
     const metaContent = JSON.stringify(meta, null, 2);
     writeFileSync(join(this.dir(slug), 'script.md'), mdContent);
     writeFileSync(join(this.dir(slug), 'meta.json'), metaContent);
+  }
+
+  /** Permanently removes a single draft folder. No-op if it doesn't exist. */
+  delete(slug: string): void {
+    const target = this.dir(slug);
+    if (!existsSync(target)) return;
+    rmSync(target, { recursive: true, force: true });
+  }
+
+  /**
+   * Permanently removes every draft directory under `<corpus>/drafts/`.
+   * Leaves sibling corpus content (`posts/`, `style-guide.md`, `index.json`,
+   * `raw/`) untouched — those are learning data, not editor output.
+   */
+  deleteAll(): number {
+    const root = this.draftsRoot();
+    if (!existsSync(root)) return 0;
+    const entries = readdirSync(root).filter((name) => statSync(join(root, name)).isDirectory());
+    for (const name of entries) {
+      rmSync(join(root, name), { recursive: true, force: true });
+    }
+    return entries.length;
   }
 
   draftPath(slug: string) { return this.dir(slug); }
