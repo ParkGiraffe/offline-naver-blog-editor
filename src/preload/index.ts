@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('giraffe', {
     ipcRenderer.on(Channels.macroProgress, h);
     return () => ipcRenderer.removeListener(Channels.macroProgress, h);
   },
+  openInFinder: (path: string) => ipcRenderer.invoke(Channels.openInFinder, path),
+  pickCorpusPath: () => ipcRenderer.invoke(Channels.pickCorpusPath),
 });

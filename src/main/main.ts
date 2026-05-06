@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, net } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net, shell, dialog } from 'electron';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { Channels } from './ipc';
@@ -64,6 +64,20 @@ app.whenReady().then(() => {
     runMacro(store().draftPath(slug), win);
   });
   ipcMain.handle(Channels.cancelMacro, () => cancelMacro());
+
+  ipcMain.handle(Channels.openInFinder, async (_e, path: string) => {
+    if (!path) return;
+    await shell.openPath(path);
+  });
+  ipcMain.handle(Channels.pickCorpusPath, async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const opts = { title: 'Corpus 폴더 선택', properties: ['openDirectory', 'createDirectory'] as const };
+    const result = win
+      ? await dialog.showOpenDialog(win, opts)
+      : await dialog.showOpenDialog(opts);
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
 
   createWindow();
 });

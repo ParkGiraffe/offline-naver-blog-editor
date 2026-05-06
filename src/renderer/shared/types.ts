@@ -12,6 +12,8 @@ export interface GiraffeBridge {
   runMacro(slug: string): Promise<void>;
   cancelMacro(): Promise<void>;
   onMacroProgress(cb: (e: { type: 'progress'; i: number; n: number; kind: string; detail?: string } | { type: 'done'; ok: boolean; error?: string }) => void): () => void;
+  openInFinder(path: string): Promise<void>;
+  pickCorpusPath(): Promise<string | null>;
 }
 
 declare global { interface Window { giraffe: GiraffeBridge; } }

@@ -12,4 +12,6 @@ export const Channels = {
   runMacro: 'macro:run',
   cancelMacro: 'macro:cancel',
   macroProgress: 'macro:progress',
+  openInFinder: 'shell:openInFinder',
+  pickCorpusPath: 'shell:pickCorpusPath',
 } as const;

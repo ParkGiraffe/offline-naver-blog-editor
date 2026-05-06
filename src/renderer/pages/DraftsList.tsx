@@ -2,14 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 
 type Draft = { slug: string; title: string; category: string; date: string; mtime: number };
 
-export default function DraftsList({ onOpen }: { onOpen: (slug: string) => void }) {
+interface Props {
+  onOpen: (slug: string) => void;
+  onChangeCorpus: () => void;
+}
+
+export default function DraftsList({ onOpen, onChangeCorpus }: Props) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [corpusPath, setCorpusPath] = useState<string | undefined>(undefined);
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
 
   const refresh = () => window.giraffe.listDrafts().then(setDrafts);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    window.giraffe.getCorpusPath().then(setCorpusPath);
+  }, []);
 
   const categories = useMemo(
     () => Array.from(new Set(drafts.map((d) => d.category).filter(Boolean))).sort(),
@@ -51,6 +60,10 @@ export default function DraftsList({ onOpen }: { onOpen: (slug: string) => void 
     window.alert(`${removed}개 삭제 완료.`);
   };
 
+  const openCorpusInFinder = () => {
+    if (corpusPath) window.giraffe.openInFinder(corpusPath);
+  };
+
   return (
     <div style={{ padding: 24, maxWidth: 760, margin: '0 auto' }}>
       <h2 style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -58,14 +71,17 @@ export default function DraftsList({ onOpen }: { onOpen: (slug: string) => void 
         <button onClick={create} style={{ fontSize: 14, padding: '4px 12px' }}>+ 새 글</button>
         <span style={{ flex: 1 }} />
         {drafts.length > 0 && (
-          <button
-            onClick={removeAll}
-            style={{ fontSize: 12, padding: '4px 10px', color: '#c00', background: 'transparent', border: '1px solid #fbb', borderRadius: 4 }}
-          >
-            전체 삭제
-          </button>
+          <button onClick={removeAll} style={dangerButtonStyle}>전체 삭제</button>
         )}
       </h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#666', margin: '4px 0 12px' }}>
+        <span>corpus:</span>
+        <code style={{ flex: 1, padding: '2px 6px', background: '#f6f6f8', borderRadius: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {corpusPath || '(미설정)'}
+        </code>
+        <button onClick={openCorpusInFinder} disabled={!corpusPath} style={subtleButtonStyle}>📁 Finder</button>
+        <button onClick={onChangeCorpus} style={subtleButtonStyle}>변경</button>
+      </div>
       <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
         <input
           value={q}
@@ -105,3 +121,13 @@ export default function DraftsList({ onOpen }: { onOpen: (slug: string) => void 
     </div>
   );
 }
+
+const dangerButtonStyle: React.CSSProperties = {
+  fontSize: 12, padding: '4px 10px', color: '#c00',
+  background: 'transparent', border: '1px solid #fbb', borderRadius: 4,
+};
+
+const subtleButtonStyle: React.CSSProperties = {
+  fontSize: 11, padding: '2px 8px', color: '#444',
+  background: 'transparent', border: '1px solid #ddd', borderRadius: 3, cursor: 'pointer',
+};

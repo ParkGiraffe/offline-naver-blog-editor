@@ -4,7 +4,11 @@ import DraftsList from './pages/DraftsList';
 import Editor from './pages/Editor';
 import './shared/types';  // ensure window.giraffe global is registered
 
-type Route = { name: 'list' } | { name: 'editor'; slug: string } | { name: 'setup' } | { name: 'loading' };
+type Route =
+  | { name: 'loading' }
+  | { name: 'setup'; initial?: string; cancellable?: boolean }
+  | { name: 'list' }
+  | { name: 'editor'; slug: string };
 
 export default function App() {
   const [route, setRoute] = useState<Route>({ name: 'loading' });
@@ -34,7 +38,25 @@ export default function App() {
   }, []);
 
   if (route.name === 'loading') return <div style={{ padding: 24 }}>Loading…</div>;
-  if (route.name === 'setup') return <Setup onDone={() => setRoute({ name: 'list' })} />;
-  if (route.name === 'list') return <DraftsList onOpen={(slug) => setRoute({ name: 'editor', slug })} />;
+  if (route.name === 'setup') {
+    return (
+      <Setup
+        initial={route.initial}
+        onDone={() => setRoute({ name: 'list' })}
+        onCancel={route.cancellable ? () => setRoute({ name: 'list' }) : undefined}
+      />
+    );
+  }
+  if (route.name === 'list') {
+    return (
+      <DraftsList
+        onOpen={(slug) => setRoute({ name: 'editor', slug })}
+        onChangeCorpus={async () => {
+          const current = await window.giraffe.getCorpusPath();
+          setRoute({ name: 'setup', initial: current, cancellable: true });
+        }}
+      />
+    );
+  }
   return <Editor slug={route.slug} onBack={() => setRoute({ name: 'list' })} />;
 }
