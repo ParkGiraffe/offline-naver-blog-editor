@@ -15,6 +15,24 @@ export default function App() {
     );
   }, []);
 
+  // Prevent the default Electron behavior of navigating to a file:// URL
+  // when an image is dragged onto the window. Lets ProseMirror's handleDrop fire.
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => { e.preventDefault(); };
+    const onDrop = (e: DragEvent) => {
+      const target = e.target as Element | null;
+      if (!target?.closest('.ProseMirror')) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, []);
+
   if (route.name === 'loading') return <div style={{ padding: 24 }}>Loading…</div>;
   if (route.name === 'setup') return <Setup onDone={() => setRoute({ name: 'list' })} />;
   if (route.name === 'list') return <DraftsList onOpen={(slug) => setRoute({ name: 'editor', slug })} />;

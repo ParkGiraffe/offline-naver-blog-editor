@@ -41,11 +41,6 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
       Divider,
       PhotoBlock.configure({
         onPaste: () => window.giraffe.pasteImage(slug),
-        onDrop: async (file) => {
-          const buf = await file.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-          return window.giraffe.dropImage(slug, file.name, base64);
-        },
         resolveSrc: (rel) => `corpus-image://${slug}/${encodeURI(rel)}`,
       }),
       ...inlineMarks,
@@ -63,6 +58,39 @@ export default function Editor({ slug, onBack }: { slug: string; onBack: () => v
 
   const doc = editor?.getJSON();
   useAutoSave(slug, fm, doc, meta, !!fm && !!doc);
+
+  // Direct DOM-level drop handler — ProseMirror's plugin handleDrop doesn't
+  // reliably fire for OS file drops. Capture phase so we win over any
+  // ProseMirror internal handling.
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom;
+    const onDrop = async (e: DragEvent) => {
+      const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith('image/'));
+      if (files.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const coords = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+      let pos = coords?.pos ?? editor.state.selection.from;
+      for (const f of files) {
+        const buf = await f.arrayBuffer();
+        // Convert to base64 in chunks to avoid stack overflow on large files.
+        const bytes = new Uint8Array(buf);
+        let bin = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        const base64 = btoa(bin);
+        const rel = await window.giraffe.dropImage(slug, f.name, base64);
+        if (!rel) continue;
+        editor.chain().insertContentAt(pos, { type: 'photoBlock', attrs: { src: rel, alt: '' } }).run();
+        pos += 1;
+      }
+    };
+    dom.addEventListener('drop', onDrop, { capture: true });
+    return () => dom.removeEventListener('drop', onDrop, { capture: true });
+  }, [editor, slug]);
 
   if (!initial) return <div style={{ padding: 24 }}>Loading…</div>;
 

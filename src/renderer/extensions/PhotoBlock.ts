@@ -3,7 +3,6 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 export interface PhotoBlockOptions {
   onPaste: () => Promise<string | null>;
-  onDrop: (file: File) => Promise<string | null>;
   resolveSrc: (rel: string) => string;
 }
 
@@ -16,7 +15,6 @@ export const PhotoBlock = Node.create<PhotoBlockOptions>({
   addOptions() {
     return {
       onPaste: async () => null,
-      onDrop: async () => null,
       resolveSrc: (r) => r,
     };
   },
@@ -40,15 +38,8 @@ export const PhotoBlock = Node.create<PhotoBlockOptions>({
   },
 
   addProseMirrorPlugins() {
-    const { onPaste, onDrop } = this.options;
+    const { onPaste } = this.options;
     const type = this.type;
-
-    const insertAt = (view: any, pos: number, rel: string) => {
-      const node = type.create({ src: rel, alt: '' });
-      const tr = view.state.tr.insert(pos, node);
-      view.dispatch(tr);
-    };
-
     return [
       new Plugin({
         key: new PluginKey('photoBlockPaste'),
@@ -68,26 +59,6 @@ export const PhotoBlock = Node.create<PhotoBlockOptions>({
               }
             }
             return false;
-          },
-          handleDrop: (view, event, _slice, _moved) => {
-            const e = event as DragEvent;
-            const files = Array.from(e.dataTransfer?.files || []).filter(
-              (f) => f.type.startsWith('image/'),
-            );
-            if (files.length === 0) return false;
-            e.preventDefault();
-            const coords = view.posAtCoords({ left: e.clientX, top: e.clientY });
-            const insertPos = coords?.pos ?? view.state.selection.from;
-            (async () => {
-              let pos = insertPos;
-              for (const f of files) {
-                const rel = await onDrop(f);
-                if (!rel) continue;
-                insertAt(view, pos, rel);
-                pos += 1;
-              }
-            })();
-            return true;
           },
         },
       }),
